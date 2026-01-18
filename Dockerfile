@@ -17,7 +17,7 @@ RUN pnpm --filter @zaid/api build
 FROM base AS builder-web
 WORKDIR /app
 
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -52,6 +52,6 @@ RUN chmod +x docker-entrypoint.sh
 # Configuração do supervisor
 COPY supervisord.conf /etc/supervisord.conf
 
-EXPOSE 3000 3001
+EXPOSE 3000
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
