@@ -31,7 +31,7 @@ RUN pnpm --filter @zaid/web build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache supervisor
+RUN apk add --no-cache supervisor openssl openssl-dev libc6-compat
 
 # Copia backend
 COPY --from=builder-api /app/node_modules ./node_modules
