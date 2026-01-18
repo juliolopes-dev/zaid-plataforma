@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS (em português)
+// ============================================
+
+enum CargoUsuario {
+  ADMIN
+  SUPERVISOR
+  ATENDENTE
+}
+
+enum StatusConversa {
+  PENDENTE
+  EM_ANDAMENTO
+  FINALIZADA
+}
+
+enum TipoMensagem {
+  TEXTO
+  IMAGEM
+  AUDIO
+  VIDEO
+  DOCUMENTO
+  STICKER
+  LOCALIZACAO
+  CONTATO
+}
+
+enum StatusMensagem {
+  PENDENTE
+  ENVIADA
+  ENTREGUE
+  LIDA
+  FALHA
+}
+
+enum DirecaoMensagem {
+  RECEBIDA
+  ENVIADA
+}
+
+// ============================================
+// MODELS (em português)
+// ============================================
+
+model Usuario {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  nome              String
+  senha             String
+  cargo             CargoUsuario   @default(ATENDENTE)
+  avatarUrl         String?
+  estaOnline        Boolean        @default(false)
+  ultimoAcessoEm    DateTime?
+  
+  conversasAtribuidas  Conversa[]     @relation("ConversasAtribuidas")
+  mensagensEnviadas    Mensagem[]     @relation("MensagensEnviadas")
+  transferenciasOrigem Transferencia[] @relation("TransferenciaOrigem")
+  transferenciasDestino Transferencia[] @relation("TransferenciaDestino")
+  
+  criadoEm          DateTime       @default(now())
+  atualizadoEm      DateTime       @updatedAt
+
+  @@map("usuarios")
+}
+
+model Contato {
+  id                String    @id @default(cuid())
+  whatsappId        String    @unique
+  telefone          String
+  nome              String?
+  fotoPerfilUrl     String?
+  
+  conversas         Conversa[]
+  
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+
+  @@map("contatos")
+}
+
+model Conversa {
+  id                   String         @id @default(cuid())
+  protocolo            String         @unique @default(cuid())
+  status               StatusConversa @default(PENDENTE)
+  
+  contato              Contato        @relation(fields: [contatoId], references: [id])
+  contatoId            String
+  
+  atribuidoPara        Usuario?       @relation("ConversasAtribuidas", fields: [atribuidoParaId], references: [id])
+  atribuidoParaId      String?
+  
+  mensagens            Mensagem[]
+  transferencias       Transferencia[]
+  
+  ultimaMensagemEm     DateTime?
+  previewUltimaMensagem String?
+  quantidadeNaoLidas   Int            @default(0)
+  
+  iniciadoEm           DateTime?
+  finalizadoEm         DateTime?
+  criadoEm             DateTime       @default(now())
+  atualizadoEm         DateTime       @updatedAt
+
+  @@index([status])
+  @@index([atribuidoParaId])
+  @@index([ultimaMensagemEm])
+  @@map("conversas")
+}
+
+model Mensagem {
+  id                   String          @id @default(cuid())
+  whatsappMensagemId   String?         @unique
+  
+  conteudo             String?
+  tipo                 TipoMensagem    @default(TEXTO)
+  direcao              DirecaoMensagem
+  status               StatusMensagem  @default(PENDENTE)
+  
+  midiaUrl             String?
+  midiaTipo            String?
+  midiaTamanho         Int?
+  midiaNome            String?
+  
+  conversa             Conversa        @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  conversaId           String
+  
+  remetente            Usuario?        @relation("MensagensEnviadas", fields: [remetenteId], references: [id])
+  remetenteId          String?
+  
+  criadoEm             DateTime        @default(now())
+  atualizadoEm         DateTime        @updatedAt
+
+  @@index([conversaId])
+  @@index([criadoEm])
+  @@map("mensagens")
+}
+
+model Transferencia {
+  id                String    @id @default(cuid())
+  
+  conversa          Conversa  @relation(fields: [conversaId], references: [id])
+  conversaId        String
+  
+  deUsuario         Usuario   @relation("TransferenciaOrigem", fields: [deUsuarioId], references: [id])
+  deUsuarioId       String
+  
+  paraUsuario       Usuario   @relation("TransferenciaDestino", fields: [paraUsuarioId], references: [id])
+  paraUsuarioId     String
+  
+  motivo            String?
+  
+  criadoEm          DateTime  @default(now())
+
+  @@map("transferencias")
+}
+
+model InstanciaWhatsApp {
+  id                String    @id @default(cuid())
+  nomeInstancia     String    @unique
+  instanciaId       String?
+  status            String    @default("desconectado")
+  qrCode            String?
+  telefone          String?
+  
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+
+  @@map("instancias_whatsapp")
+}
+
+model RespostaRapida {
+  id                String    @id @default(cuid())
+  atalho            String    @unique
+  titulo            String
+  conteudo          String
+  
+  criadoEm          DateTime  @default(now())
+  atualizadoEm      DateTime  @updatedAt
+
+  @@map("respostas_rapidas")
+}
