@@ -26,8 +26,6 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN npm install -g pnpm
-
 # Copia dependências e build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
@@ -37,6 +35,10 @@ COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 
 WORKDIR /app/apps/api
 
+# Script de inicialização
+COPY apps/api/docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 3001
 
-CMD ["node", "dist/main.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
