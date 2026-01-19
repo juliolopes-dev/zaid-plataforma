@@ -1,17 +1,18 @@
 FROM node:20-alpine AS base
 RUN npm install -g pnpm
+RUN apk add --no-cache openssl openssl-dev libc6-compat
 
 # ==================== BUILD BACKEND ====================
 FROM base AS builder-api
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/api/package.json ./apps/api/
-RUN pnpm install --frozen-lockfile
-
 COPY apps/api ./apps/api
+
+RUN pnpm install --frozen-lockfile
 RUN cd apps/api && npx prisma generate
-RUN pnpm --filter @zaid/api build
+RUN cd apps/api && pnpm run build
+RUN ls -la apps/api/dist/
 
 # ==================== BUILD FRONTEND ====================
 FROM base AS builder-web
@@ -21,11 +22,10 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web/package.json ./apps/web/
-RUN pnpm install --frozen-lockfile
-
 COPY apps/web ./apps/web
-RUN pnpm --filter @zaid/web build
+
+RUN pnpm install --frozen-lockfile
+RUN cd apps/web && pnpm run build
 
 # ==================== PRODUCTION ====================
 FROM node:20-alpine AS runner
@@ -33,12 +33,9 @@ WORKDIR /app
 
 RUN apk add --no-cache supervisor openssl openssl-dev libc6-compat
 
-# Copia backend
+# Copia backend completo
 COPY --from=builder-api /app/node_modules ./node_modules
-COPY --from=builder-api /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder-api /app/apps/api/dist ./apps/api/dist
-COPY --from=builder-api /app/apps/api/package.json ./apps/api/
-COPY --from=builder-api /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder-api /app/apps/api ./apps/api
 
 # Copia frontend
 COPY --from=builder-web /app/apps/web/.next/standalone ./
