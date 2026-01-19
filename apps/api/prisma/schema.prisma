@@ -12,9 +12,23 @@ datasource db {
 // ============================================
 
 enum CargoUsuario {
-  ADMIN
+  SUPER_ADMIN  // Administrador da plataforma (acesso a todas empresas)
+  ADMIN        // Administrador da empresa
   SUPERVISOR
   ATENDENTE
+}
+
+enum PlanoEmpresa {
+  GRATUITO
+  BASICO
+  PROFISSIONAL
+  EMPRESARIAL
+}
+
+enum StatusEmpresa {
+  ATIVA
+  SUSPENSA
+  CANCELADA
 }
 
 enum StatusConversa {
@@ -51,6 +65,40 @@ enum DirecaoMensagem {
 // MODELS (em português)
 // ============================================
 
+model Empresa {
+  id                String         @id @default(cuid())
+  nome              String
+  slug              String         @unique
+  cnpj              String?        @unique
+  email             String
+  telefone          String?
+  logoUrl           String?
+  
+  plano             PlanoEmpresa   @default(GRATUITO)
+  status            StatusEmpresa  @default(ATIVA)
+  
+  // Limites do plano
+  limiteInstancias  Int            @default(1)
+  limiteUsuarios    Int            @default(3)
+  limiteConversas   Int            @default(100)
+  
+  // Datas importantes
+  dataAssinatura    DateTime       @default(now())
+  dataVencimento    DateTime?
+  
+  // Relacionamentos
+  usuarios          Usuario[]
+  instancias        InstanciaWhatsApp[]
+  contatos          Contato[]
+  conversas         Conversa[]
+  respostasRapidas  RespostaRapida[]
+  
+  criadoEm          DateTime       @default(now())
+  atualizadoEm      DateTime       @updatedAt
+
+  @@map("empresas")
+}
+
 model Usuario {
   id                String         @id @default(cuid())
   email             String         @unique
@@ -61,6 +109,10 @@ model Usuario {
   estaOnline        Boolean        @default(false)
   ultimoAcessoEm    DateTime?
   
+  // Vínculo com empresa (null para SUPER_ADMIN)
+  empresa           Empresa?       @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId         String?
+  
   conversasAtribuidas  Conversa[]     @relation("ConversasAtribuidas")
   mensagensEnviadas    Mensagem[]     @relation("MensagensEnviadas")
   transferenciasOrigem Transferencia[] @relation("TransferenciaOrigem")
@@ -69,28 +121,39 @@ model Usuario {
   criadoEm          DateTime       @default(now())
   atualizadoEm      DateTime       @updatedAt
 
+  @@index([empresaId])
   @@map("usuarios")
 }
 
 model Contato {
   id                String    @id @default(cuid())
-  whatsappId        String    @unique
+  whatsappId        String
   telefone          String
   nome              String?
   fotoPerfilUrl     String?
+  
+  // Vínculo com empresa
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId         String
   
   conversas         Conversa[]
   
   criadoEm          DateTime  @default(now())
   atualizadoEm      DateTime  @updatedAt
 
+  @@unique([whatsappId, empresaId])
+  @@index([empresaId])
   @@map("contatos")
 }
 
 model Conversa {
   id                   String         @id @default(cuid())
-  protocolo            String         @unique @default(cuid())
+  protocolo            String         @default(cuid())
   status               StatusConversa @default(PENDENTE)
+  
+  // Vínculo com empresa
+  empresa              Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId            String
   
   contato              Contato        @relation(fields: [contatoId], references: [id])
   contatoId            String
@@ -110,6 +173,8 @@ model Conversa {
   criadoEm             DateTime       @default(now())
   atualizadoEm         DateTime       @updatedAt
 
+  @@unique([protocolo, empresaId])
+  @@index([empresaId])
   @@index([status])
   @@index([atribuidoParaId])
   @@index([ultimaMensagemEm])
@@ -165,26 +230,38 @@ model Transferencia {
 
 model InstanciaWhatsApp {
   id                String    @id @default(cuid())
-  nomeInstancia     String    @unique
+  nomeInstancia     String
   instanciaId       String?
   status            String    @default("desconectado")
   qrCode            String?
   telefone          String?
   
+  // Vínculo com empresa
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId         String
+  
   criadoEm          DateTime  @default(now())
   atualizadoEm      DateTime  @updatedAt
 
+  @@unique([nomeInstancia, empresaId])
+  @@index([empresaId])
   @@map("instancias_whatsapp")
 }
 
 model RespostaRapida {
   id                String    @id @default(cuid())
-  atalho            String    @unique
+  atalho            String
   titulo            String
   conteudo          String
+  
+  // Vínculo com empresa
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId         String
   
   criadoEm          DateTime  @default(now())
   atualizadoEm      DateTime  @updatedAt
 
+  @@unique([atalho, empresaId])
+  @@index([empresaId])
   @@map("respostas_rapidas")
 }
