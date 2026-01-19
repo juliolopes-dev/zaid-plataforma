@@ -47,7 +47,7 @@ export class WhatsappService {
   }
 
   // Criar nova instância
-  async criarInstancia(nomeInstancia: string) {
+  async criarInstancia(nomeInstancia: string, empresaId?: string) {
     try {
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.post(
@@ -61,11 +61,15 @@ export class WhatsappService {
         ),
       );
 
-      // Salva no banco local
+      // Salva no banco local com empresaId
       await this.prisma.instanciaWhatsApp.upsert({
         where: { nomeInstancia },
         update: { status: 'criada' },
-        create: { nomeInstancia, status: 'criada' },
+        create: { 
+          nomeInstancia, 
+          status: 'criada',
+          empresaId: empresaId || null,
+        },
       });
 
       return {

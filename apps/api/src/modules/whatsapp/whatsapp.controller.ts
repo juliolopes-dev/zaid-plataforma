@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WhatsappService } from './whatsapp.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -12,14 +12,16 @@ export class WhatsappController {
 
   @Get('instancias')
   @ApiOperation({ summary: 'Listar todas as instâncias' })
-  listarInstancias() {
-    return this.whatsappService.listarInstancias();
+  listarInstancias(@Request() req: any) {
+    const empresaId = req.user?.empresaId;
+    return this.whatsappService.listarInstancias(empresaId);
   }
 
   @Post('instancias')
   @ApiOperation({ summary: 'Criar nova instância' })
-  criarInstancia(@Body() body: { nome: string }) {
-    return this.whatsappService.criarInstancia(body.nome);
+  criarInstancia(@Request() req: any, @Body() body: { nome: string }) {
+    const empresaId = req.user?.empresaId;
+    return this.whatsappService.criarInstancia(body.nome, empresaId);
   }
 
   @Get('instancias/:nome')
