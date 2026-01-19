@@ -26,20 +26,22 @@ export class WhatsappService {
     };
   }
 
-  // Listar todas as instâncias da Evolution API
-  async listarInstancias() {
+  // Listar instâncias do banco de dados (filtradas por empresa se necessário)
+  async listarInstancias(empresaId?: string) {
     try {
-      const response: AxiosResponse<any> = await firstValueFrom(
-        this.httpService.get(
-          `${this.baseUrl}/instance/fetchInstances`,
-          { headers: this.getHeaders() },
-        ),
-      );
-      
-      const instancias = response.data || [];
-      return Array.isArray(instancias) ? instancias : instancias.value || [];
+      const instancias = await this.prisma.instanciaWhatsApp.findMany({
+        where: empresaId ? { empresaId } : undefined,
+        orderBy: { criadoEm: 'desc' },
+      });
+
+      return instancias.map((inst) => ({
+        id: inst.id,
+        name: inst.nomeInstancia,
+        connectionStatus: inst.status,
+        number: inst.telefone,
+      }));
     } catch (error: any) {
-      console.error('Erro ao listar instâncias:', error?.response?.data || error?.message);
+      console.error('Erro ao listar instâncias:', error?.message);
       return [];
     }
   }
