@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+// Usa proxy reverso do Next.js (/api -> localhost:3001/api)
+// Isso funciona tanto no servidor quanto no browser
 export const api = axios.create({
-  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
