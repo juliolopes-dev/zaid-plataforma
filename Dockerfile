@@ -1,5 +1,5 @@
 FROM node:20-alpine AS base
-RUN npm install -g pnpm
+RUN npm install -g pnpm @nestjs/cli
 RUN apk add --no-cache openssl openssl-dev libc6-compat
 
 # ==================== BUILD BACKEND ====================
@@ -11,8 +11,8 @@ COPY apps/api ./apps/api
 
 RUN pnpm install --frozen-lockfile
 RUN cd apps/api && npx prisma generate
-RUN cd apps/api && pnpm run build
-RUN ls -la apps/api/dist/
+RUN cd apps/api && nest build
+RUN ls -la apps/api/dist/ && ls -la apps/api/dist/main.js
 
 # ==================== BUILD FRONTEND ====================
 FROM base AS builder-web
