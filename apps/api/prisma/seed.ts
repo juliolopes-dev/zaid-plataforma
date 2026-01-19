@@ -78,12 +78,7 @@ async function main() {
 
   for (const rr of respostasRapidas) {
     await prisma.respostaRapida.upsert({
-      where: { 
-        atalho_empresaId: {
-          atalho: rr.atalho,
-          empresaId: rr.empresaId,
-        }
-      },
+      where: { atalho: rr.atalho },
       update: {},
       create: rr,
     });
