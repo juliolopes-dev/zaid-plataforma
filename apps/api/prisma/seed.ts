@@ -24,34 +24,20 @@ async function main() {
   });
   console.log('✅ Empresa demo criada:', empresaDemo.nome);
 
-  // Criar super admin (sem empresa)
-  const senhaSuperAdmin = await hash('superadmin123', 10);
-  const superAdmin = await prisma.usuario.upsert({
-    where: { email: 'superadmin@zaid.com' },
+  // Criar conta do Julio (admin da empresa)
+  const senhaJulio = await hash('Juliofran1996@', 10);
+  const julio = await prisma.usuario.upsert({
+    where: { email: 'juliofranlopes18@gmail.com' },
     update: {},
     create: {
-      email: 'superadmin@zaid.com',
-      nome: 'Super Administrador',
-      senha: senhaSuperAdmin,
-      cargo: CargoUsuario.SUPER_ADMIN,
-    },
-  });
-  console.log('✅ Super Admin criado:', superAdmin.email);
-
-  // Criar admin da empresa
-  const senhaAdmin = await hash('admin123', 10);
-  const admin = await prisma.usuario.upsert({
-    where: { email: 'admin@zaid.com' },
-    update: {},
-    create: {
-      email: 'admin@zaid.com',
-      nome: 'Administrador',
-      senha: senhaAdmin,
+      email: 'juliofranlopes18@gmail.com',
+      nome: 'Julio Lopes',
+      senha: senhaJulio,
       cargo: CargoUsuario.ADMIN,
       empresaId: empresaDemo.id,
     },
   });
-  console.log('✅ Admin da empresa criado:', admin.email);
+  console.log('✅ Conta do Julio criada:', julio.email);
 
   // Criar atendente da empresa
   const senhaAtendente = await hash('atendente123', 10);
