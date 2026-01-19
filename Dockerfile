@@ -1,6 +1,6 @@
-FROM node:20-alpine AS base
-RUN npm install -g pnpm @nestjs/cli
-RUN apk add --no-cache openssl openssl-dev libc6-compat
+FROM node:20-slim AS base
+RUN npm install -g pnpm
+RUN apt-get update && apt-get install -y openssl supervisor && rm -rf /var/lib/apt/lists/*
 
 # ==================== BUILD BACKEND ====================
 FROM base AS builder-api
@@ -9,10 +9,11 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api ./apps/api
 
-RUN pnpm install --frozen-lockfile
-RUN cd apps/api && npx prisma generate
-RUN cd apps/api && nest build
-RUN ls -la apps/api/dist/ && ls -la apps/api/dist/main.js
+RUN pnpm install
+WORKDIR /app/apps/api
+RUN npx prisma generate
+RUN npx tsc -p tsconfig.json
+RUN echo "=== Verificando dist ===" && ls -la dist/
 
 # ==================== BUILD FRONTEND ====================
 FROM base AS builder-web
@@ -24,14 +25,14 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web ./apps/web
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 RUN cd apps/web && pnpm run build
 
 # ==================== PRODUCTION ====================
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
-RUN apk add --no-cache supervisor openssl openssl-dev libc6-compat
+RUN apt-get update && apt-get install -y openssl supervisor && rm -rf /var/lib/apt/lists/*
 
 # Copia backend completo
 COPY --from=builder-api /app/node_modules ./node_modules
